@@ -1,10 +1,18 @@
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Scanner;
-
+import java.util.Date;
 public class SystemMain {
     public static void main(String[] args) {
-        Map<String, String> userMap = new HashMap<>();
+        List<User> userList = new ArrayList<>();
+        //添加默认的管理员信息
+        User admin = new User(); // 调用无参构造
+        admin.setUsername("admin");
+        admin.setPassword("123456");
+        admin.setRole("admin");
+        admin.setRegisterTime(new Date());
+        userList.add(admin);
+
         Scanner scanner = new Scanner(System.in);
         Boolean running = true;
         while(running){
@@ -16,11 +24,11 @@ public class SystemMain {
             switch (choice) {
                 case 1:
                     Login login = new Login();
-                    login.doLogin(userMap, scanner);
+                    login.doLogin(userList, scanner);
                     break;
                 case 2:
                     Register register = new Register();
-                    register.doRegister(userMap, scanner);
+                    register.doRegister(userList, scanner);
                     break;
                 case 0:
                     System.out.println("退出系统");
