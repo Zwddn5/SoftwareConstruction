@@ -30,12 +30,20 @@ public class SystemMain {
             int choice = scanner.nextInt();
             switch (choice) {
                 case 1:
-                    Login login = new Login();
-                    login.doLogin(userList, scanner);
+                    try {
+                        Login login = new Login();
+                        login.doLogin(userList, scanner);
+                    }catch (BusinessException e){
+                        System.out.println("【提示】"+e.getMessage());
+                    }
                     break;
                 case 2:
-                    Register register = new Register();
-                    register.doRegister(userList, scanner);
+                    try {
+                        Register register = new Register();
+                        register.doRegister(userList, scanner);
+                    }catch (BusinessException e){
+                        System.out.println("【提示】"+e.getMessage());
+                    }
                     break;
                 case 0:
                     System.out.println("退出系统");

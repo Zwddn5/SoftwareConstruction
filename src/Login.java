@@ -11,6 +11,9 @@ public class Login {
         System.out.println("请输入用户名：");
         String inputName = scanner.next();
 
+        if (inputName.isBlank()) {
+            throw new ParamEmptyException("用户名不能为空");
+        }
         // 1.先查找用户
         User targetUser = null;
         for (User u : userList) {
@@ -22,28 +25,27 @@ public class Login {
 
         // 情况1：用户名不存在，直接结束登录
         if (targetUser == null) {
-            System.out.println("用户名不存在，请重新登录");
-            return;
+            throw new UserNotFoundException("用户名不存在");
         }
 
-        // 情况2：用户名存在，循环输入密码，密码错就重输密码
-        boolean pwdRight = false;
-        while (!pwdRight) {
-            System.out.println("请输入密码：");
-            String inputPwd = scanner.next();
-            if (targetUser.getPassword().equals(inputPwd)) {
-                pwdRight = true;
-                // 登录成功
-                if ("admin".equals(targetUser.getRole())) {
-                    System.out.println("管理员登录成功，欢迎管理员：" + inputName);
-                } else {
-                    System.out.println("学生登录成功，欢迎同学：" + inputName);
-                }
-                System.out.println("当前用户信息：" + targetUser);
+        // 情况2：用户名存在，输入密码
+
+
+        System.out.println("请输入密码：");
+        String inputPwd = scanner.next();
+        if(inputPwd.isBlank()){
+            throw new ParamEmptyException("密码不能为空");
+        }
+        if (targetUser.getPassword().equals(inputPwd)) {
+            if ("admin".equals(targetUser.getRole())) {
+                System.out.println("管理员登录成功，欢迎管理员：" + inputName);
             } else {
-                System.out.println("密码错误！请重新输入密码（用户名不变）");
-                // 不退出循环，继续让输密码
+                System.out.println("学生登录成功，欢迎同学：" + inputName);
             }
+            System.out.println("当前用户信息：" + targetUser);
+        } else {
+            //密码错误抛异常，退出登录流程
+            throw new PasswordWrongException("密码错误！登录失败");
         }
     }
 }
