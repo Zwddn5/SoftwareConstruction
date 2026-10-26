@@ -81,5 +81,83 @@ public class FileUtil {
             e.printStackTrace();
         }
     }
+
+
+
+
+
+
+
+
+    private static final String RESOURCE_FILE = "resources.txt";
+    /**
+     * 初始化资源文件，不存在自动创建
+     */
+    public static void initResourceFile(){
+        File file = new File(RESOURCE_FILE);
+        if(!file.exists()){
+            try {
+                file.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * 读取资源文件，返回List<CampusResource>
+     */
+    public static List<CampusResource> loadResources(){
+        initResourceFile();
+        List<CampusResource> resourceList = new ArrayList<>();
+        try(BufferedReader br = Files.newBufferedReader(Paths.get(RESOURCE_FILE),StandardCharsets.UTF_8)){
+            String line;
+            while((line = br.readLine())!=null){
+                if(line.isBlank()) continue;
+                String[] parts = line.split(",");
+                if(parts.length !=6) continue;
+                String id = parts[0];
+                String name = parts[1];
+                String type = parts[2];
+                //字符串转为枚举
+                ResourceStatus status;
+                try{
+                    status = ResourceStatus.valueOf(parts[3]);
+                }catch (IllegalArgumentException e){
+                    continue;
+                }
+                String location = parts[4];
+                String desc = parts[5];
+                CampusResource res = new CampusResource(id,name,type,status,location,desc);
+                resourceList.add(res);
+            }
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+        return resourceList;
+    }
+
+    /**
+     * 把资源集合覆盖写入resource.txt
+     */
+    public static void saveResources(List<CampusResource> resourceList){
+        initResourceFile();
+        try(BufferedWriter bw = Files.newBufferedWriter(Paths.get(RESOURCE_FILE),StandardCharsets.UTF_8)){
+            for(CampusResource r : resourceList){
+                String line = String.format("%s,%s,%s,%s,%s,%s",
+                        r.getId(),
+                        r.getName(),
+                        r.getType(),
+                        r.getStatus().name(),
+                        r.getLocation(),
+                        r.getDescription()
+                );
+                bw.write(line);
+                bw.newLine();
+            }
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+    }
 }
 
