@@ -1,5 +1,10 @@
 import java.util.Date;
 
+/**
+ * 用户实体类
+ * 保存用户账号、密码信息，提供get/set方法与账号比对方法
+ * 不变量RI：username不为空、password不为空
+ */
 public class User {
     private String username;
     private String password;
