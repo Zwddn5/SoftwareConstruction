@@ -6,7 +6,7 @@ import java.util.Scanner;
  * 负责接收输入、校验用户名密码，完成登录逻辑
  */
 public class Login {
-    public User doLogin(List<User> userList, Scanner scanner) {
+    public Result<User> doLogin(List<User> userList, Scanner scanner) {
         System.out.println("====用户登录====");
         System.out.println("请输入用户名：");
         String inputName = scanner.next();
@@ -44,6 +44,6 @@ public class Login {
             System.out.println("学生登录成功，欢迎同学：" + inputName);
         }
         System.out.println("当前用户信息：" + targetUser);
-        return targetUser;
+        return Result.success("登录成功", targetUser);
     }
 }

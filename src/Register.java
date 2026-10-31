@@ -7,7 +7,7 @@ import java.util.Scanner;
  * 校验账号是否重复，合法则新增用户到集合
  */
 public class Register {
-    public void doRegister(List<User> userList, Scanner scanner) {
+    public Result<Void> doRegister(List<User> userList, Scanner scanner) {
         System.out.println("====用户注册====");
         System.out.println("请输入新的用户名：");
         String newUser = scanner.next();
@@ -35,5 +35,6 @@ public class Register {
         FileUtil.saveUsers(userList);
         System.out.println("注册成功!");
         System.out.println("用户信息"+user);
+        return Result.success("注册成功");
     }
 }

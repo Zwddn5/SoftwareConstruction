@@ -41,8 +41,9 @@ public class SystemMain {
                 case 1:{
                     try {
                         Login login = new Login();
-                        User loginUser = login.doLogin(userList, scanner);
-                        //登录成功，拿到登录用户，进入角色子菜单
+                        Result<User> loginResult = login.doLogin(userList, scanner);
+                        //登录Result一定成功，业务异常已经被catch捕获
+                        User loginUser = loginResult.getData();
                         if("admin".equals(loginUser.getRole())){
                             //管理员菜单
                             adminSubMenu(resourceList,scanner);
@@ -51,6 +52,7 @@ public class SystemMain {
                             studentSubMenu(resourceList,scanner);
                         }
                     }catch (BusinessException e){
+                        Result<?> result = Result.fail(e.getMessage());
                         System.out.println("【业务提示】"+e.getMessage());
                     }
                     break;
@@ -58,8 +60,12 @@ public class SystemMain {
                 case 2:{
                     try {
                         Register register = new Register();
-                        register.doRegister(userList, scanner);
+                        Result<Void> regResult = register.doRegister(userList, scanner);
+                        if(regResult.isSuccess()) {
+                            System.out.println(regResult.getMsg());
+                        }
                     }catch (BusinessException e){
+                        Result<?> result = Result.fail(e.getMessage());
                         System.out.println("【业务提示】"+e.getMessage());
                     }
                     break;
@@ -97,18 +103,23 @@ public class SystemMain {
                 continue;
             }
             try {
+                Result<?> result;
                 switch (opt){
                     case 1:
-                        resourceManager.addResource(resList,"admin",scanner);
+                        result = resourceManager.addResource(resList,"admin",scanner);
+                        if (!result.isSuccess()) System.out.println(result.getMsg());
                         break;
                     case 2:
-                        resourceManager.queryAllResource(resList,"admin");
+                        result = resourceManager.queryAllResource(resList,"admin");
+                        if (!result.isSuccess()) System.out.println(result.getMsg());
                         break;
                     case 3:
-                        resourceManager.updateResource(resList,"admin",scanner);
+                        result = resourceManager.updateResource(resList,"admin",scanner);
+                        if (!result.isSuccess()) System.out.println(result.getMsg());
                         break;
                     case 4:
-                        resourceManager.deleteResource(resList,"admin",scanner);
+                        result = resourceManager.deleteResource(resList,"admin",scanner);
+                        if (!result.isSuccess()) System.out.println(result.getMsg());
                         break;
                     case 0:
                         adminRun = false;
@@ -118,7 +129,8 @@ public class SystemMain {
                         System.out.println("无效选项");
                 }
             }catch (BusinessException e){
-                System.out.println("【业务提示】"+e.getMessage());
+                Result<?> failResult = Result.fail(e.getMessage());
+                System.out.println("【业务提示】"+failResult.getMsg());
             }
         }
     }
@@ -143,9 +155,11 @@ public class SystemMain {
                 continue;
             }
             try {
+                Result<?> result;
                 switch (opt){
                     case 1:
-                        resourceManager.queryAvailableResources(resList);
+                        result = resourceManager.queryAvailableResources(resList);
+                        if (!result.isSuccess()) System.out.println(result.getMsg());
                         break;
                     case 0:
                         stuRun = false;
@@ -155,7 +169,8 @@ public class SystemMain {
                         System.out.println("无效选项");
                 }
             }catch (BusinessException e){
-                System.out.println("【业务提示】"+e.getMessage());
+                Result<?> failResult = Result.fail(e.getMessage());
+                System.out.println("【业务提示】"+failResult.getMsg());
             }
         }
     }
