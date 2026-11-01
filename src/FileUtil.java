@@ -4,6 +4,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -13,6 +15,10 @@ import java.util.List;
  * 职责：自动创建user.txt，读取用户集合，写入用户集合；try‑with‑resources管理流
  */
 public class FileUtil {
+
+    /**
+     * 存放用户数据的文件，不存在自动创建
+     */
     private static final String USER_FILE = "users.txt";
     private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy‑MM‑dd HH:mm:ss");
 
@@ -84,15 +90,10 @@ public class FileUtil {
 
 
 
-
-
-
-
-
-    private static final String RESOURCE_FILE = "resources.txt";
     /**
-     * 初始化资源文件，不存在自动创建
+     * 存放资源的文件，不存在自动创建
      */
+    private static final String RESOURCE_FILE = "resources.txt";
     public static void initResourceFile(){
         File file = new File(RESOURCE_FILE);
         if(!file.exists()){
@@ -103,7 +104,6 @@ public class FileUtil {
             }
         }
     }
-
     /**
      * 读取资源文件，返回List<CampusResource>
      */
@@ -136,7 +136,6 @@ public class FileUtil {
         }
         return resourceList;
     }
-
     /**
      * 把资源集合覆盖写入resource.txt
      */
@@ -159,5 +158,78 @@ public class FileUtil {
             e.printStackTrace();
         }
     }
+
+
+    /**
+     * 存放预约记录的文件，不存在自动创建
+     */
+    private static final String RESERVE_FILE = "reserve.txt";
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy‑MM‑dd HH:mm:ss");
+
+    public static void initReserveFile(){
+        File file = new File(RESERVE_FILE);
+        if(!file.exists()){
+            try {
+                file.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    //加载全部预约记录
+    public static List<ReserveRecord> loadReserveRecords(){
+        initReserveFile();
+        List<ReserveRecord> list = new ArrayList<>();
+        try(BufferedReader br = Files.newBufferedReader(Paths.get(RESERVE_FILE),StandardCharsets.UTF_8)){
+            String line;
+            while((line = br.readLine())!=null){
+                if(line.isBlank()) continue;
+                String[] parts = line.split(",");
+                if(parts.length !=8) continue;
+                ReserveRecord record = new ReserveRecord();
+                record.setRecordId(parts[0]);
+                record.setResourceId(parts[1]);
+                record.setApplicantUsername(parts[2]);
+                record.setApplyTime(LocalDateTime.parse(parts[3],DATE_TIME_FORMATTER));
+                record.setReserveStartTime(LocalDateTime.parse(parts[4],DATE_TIME_FORMATTER));
+                record.setReserveEndTime(LocalDateTime.parse(parts[5],DATE_TIME_FORMATTER));
+                record.setStatus(ReserveStatus.valueOf(parts[6]));
+                record.setRemark(parts[7]);
+                list.add(record);
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    //保存预约记录集合，覆盖写入文件
+    public static void saveReserveRecords(List<ReserveRecord> list){
+        initReserveFile();
+        try(BufferedWriter bw = Files.newBufferedWriter(Paths.get(RESERVE_FILE),StandardCharsets.UTF_8)){
+            for(ReserveRecord r : list){
+                String line = String.format("%s,%s,%s,%s,%s,%s,%s,%s",
+                        r.getRecordId(),
+                        r.getResourceId(),
+                        r.getApplicantUsername(),
+                        r.getApplyTime().format(DATE_TIME_FORMATTER),
+                        r.getReserveStartTime().format(DATE_TIME_FORMATTER),
+                        r.getReserveEndTime().format(DATE_TIME_FORMATTER),
+                        r.getStatus().name(),
+                        r.getRemark()
+                );
+                bw.write(line);
+                bw.newLine();
+            }
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+    }
+
+
+
+
+
 }
 

@@ -101,6 +101,9 @@ public class ResourceManager {
 
     /**
      * 根据id查找资源，找不到抛异常
+     * 修改原因：传统 for 循环找不到时逻辑上等价返回 null，null 容易引发空指针异常。
+     * `Optional`是 Java 8 引入的，专门用来表达「对象可能存在，也可能不存在」的容器，强制我们做存在性判断。
+     * 好处：显式处理对象缺失场景，降低空指针风险；**但是对外返回依然是 Result，上层调用代码完全不用改动**。
      */
     public Result<CampusResource> findById(List<CampusResource> resList,String id){
         /*
@@ -114,7 +117,7 @@ public class ResourceManager {
         // stream.findFirst 返回 Optional<CampusResource>
         Optional<CampusResource> opt = resList.stream()
                 .filter(r -> r.getId().equals(id))
-                .findFirst();
+                .findFirst();//`.findFirst()`：获取流中第一个匹配的元素
 
         if (opt.isPresent()) {
             //存在：取出对象，包装Result成功
