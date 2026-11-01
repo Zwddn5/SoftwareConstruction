@@ -1,6 +1,5 @@
-import java.util.List;
-import java.util.Scanner;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class ResourceManager {
     /**
@@ -49,18 +48,32 @@ public class ResourceManager {
             throw new PermissionDeniedException("权限不足，学生不能查看全部资源");
         }
         System.out.println("\n====全部校园资源列表====");
+        /*修改前的for循环
         if (resList.isEmpty()) {
             System.out.println("暂无资源数据");
         }else{
             resList.forEach(System.out::println);
         }
         return Result.success("查询全部资源成功");
+
+        */
+        //采用Stream流进行排序（ID升序）
+        List<CampusResource> allSorted = resList.stream()
+                .sorted(Comparator.comparing(CampusResource::getId))
+                .collect(Collectors.toList());
+        if (allSorted.isEmpty()) {
+            System.out.println("暂无资源数据");
+        } else {
+            allSorted.forEach(System.out::println);
+        }
+        return Result.success("查询全部资源成功", allSorted);
     }
     /**
      * 查询资源，学生使用,只能查到可预约资源
      */
     public Result<List<CampusResource>> queryAvailableResources(List<CampusResource> resList) {
         System.out.println("\n====可预约的校园资源列表====");
+        /*
         boolean hasAvailable = false;
         for (CampusResource r : resList) {
             if (r.getStatus().equals(ResourceStatus.AVAILABLE)) {
@@ -72,18 +85,56 @@ public class ResourceManager {
             System.out.println("暂无可预约资源");
         }
         return Result.success("查询可预约资源成功");
+        */
+        // filter过滤状态为AVAILABLE，按id升序排序
+        List<CampusResource> availableList = resList.stream()
+                .filter(r -> r.getStatus().equals(ResourceStatus.AVAILABLE))
+                .sorted(Comparator.comparing(CampusResource::getId))
+                .collect(Collectors.toList());
+        if (availableList.isEmpty()) {
+            System.out.println("暂无可预约资源");
+        } else {
+            availableList.forEach(System.out::println);
+        }
+        return Result.success("查询可预约资源成功", availableList);
     }
 
     /**
      * 根据id查找资源，找不到抛异常
      */
     public Result<CampusResource> findById(List<CampusResource> resList,String id){
+        /*
         for(CampusResource r : resList){
             if(r.getId().equals(id)){
                 return Result.success("查询资源成功", r);
             }
         }
         return Result.fail("未找到该ID对应的资源");
+        */
+        // stream.findFirst 返回 Optional<CampusResource>
+        Optional<CampusResource> opt = resList.stream()
+                .filter(r -> r.getId().equals(id))
+                .findFirst();
+
+        if (opt.isPresent()) {
+            //存在：取出对象，包装Result成功
+            return Result.success("查询资源成功", opt.get());
+        } else {
+            //不存在返回失败Result
+            return Result.fail("资源ID【" + id + "】不存在");
+        }
+    }
+
+    /**
+     * 资源名称模糊查询
+     */
+    public Result<List<CampusResource>> queryResourceByKeyword(List<CampusResource> resList, String keyword) {
+        List<CampusResource> result = resList.stream()
+                //忽略大小写匹配名称包含关键词
+                .filter(r -> r.getName().toLowerCase().contains(keyword.toLowerCase()))
+                .sorted(Comparator.comparing(CampusResource::getId))
+                .collect(Collectors.toList());
+        return Result.success("模糊查询完成", result);
     }
 
     /**

@@ -92,6 +92,7 @@ public class SystemMain {
             System.out.println("2 查询全部资源");
             System.out.println("3 修改资源");
             System.out.println("4 删除资源");
+            System.out.println("5 根据名称模糊查询资源");
             System.out.println("0 返回上层主菜单");
             System.out.print("请输入选择：");
             int opt;
@@ -121,6 +122,22 @@ public class SystemMain {
                         result = resourceManager.deleteResource(resList,"admin",scanner);
                         if (!result.isSuccess()) System.out.println(result.getMsg());
                         break;
+                    case 5:{
+                        System.out.print("输入查询关键词：");
+                        String key = scanner.next();
+                        Result<List<CampusResource>> keyResult = resourceManager.queryResourceByKeyword(resList,key);
+                        if(keyResult.isSuccess()){
+                            List<CampusResource> list = keyResult.getData();
+                            if(list.isEmpty()){
+                                System.out.println("没有匹配资源");
+                            }else{
+                                list.forEach(System.out::println);
+                            }
+                        }else{
+                            System.out.println(keyResult.getMsg());
+                        }
+                        break;
+                    }
                     case 0:
                         adminRun = false;
                         System.out.println("返回主菜单");
