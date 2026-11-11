@@ -1,3 +1,7 @@
+package utils;
+
+import entity.*;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -34,7 +38,7 @@ public class FileUtil {
         }
     }
     /**
-     * 从磁盘user.txt读取全部用户，解析为List<User>
+     * 从磁盘user.txt读取全部用户，解析为List<entity.User>
      * @return 用户集合
      */
     public static List<User> loadUsers() {
@@ -105,7 +109,7 @@ public class FileUtil {
         }
     }
     /**
-     * 读取资源文件，返回List<CampusResource>
+     * 读取资源文件，返回List<entity.CampusResource>
      */
     public static List<CampusResource> loadResources(){
         initResourceFile();

@@ -1,3 +1,5 @@
+package entity;
+
 public class CampusResource {
     private String id;
     private String name;
@@ -56,8 +58,7 @@ public class CampusResource {
     }
     @Override
     public String toString() {
-        return "CampusResource [id=" + id + ", name=" + name + ", type=" + type + ", status=" + status
+        return "entity.CampusResource [id=" + id + ", name=" + name + ", type=" + type + ", status=" + status
                 + ", location=" + location + ", description=" + description + "]";
     }
-
 }

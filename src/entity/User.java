@@ -1,3 +1,5 @@
+package entity;
+
 import java.util.Date;
 
 /**
@@ -46,7 +48,7 @@ public class User {
     //自定义输出字符串
     @Override
     public String toString() {
-        return "User [username=" + username + ", password=" + password + "," +
+        return "entity.User [username=" + username + ", password=" + password + "," +
                 " role=" + role + ", registerTime=" + registerTime + "]";
     }
 }

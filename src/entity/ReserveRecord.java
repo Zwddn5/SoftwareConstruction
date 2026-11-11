@@ -1,3 +1,5 @@
+package entity;
+
 import java.time.LocalDateTime;
 
 /**
@@ -47,7 +49,7 @@ public class ReserveRecord {
 
     @Override
     public String toString() {
-        return "ReserveRecord{" +
+        return "entity.ReserveRecord{" +
                 "recordId='" + recordId + '\'' +
                 ", resourceId='" + resourceId + '\'' +
                 ", applicantUsername='" + applicantUsername + '\'' +

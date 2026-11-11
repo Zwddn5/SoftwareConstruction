@@ -1,28 +1,46 @@
+package service;
+
+import dao.ReserveRecordDao;
+import dao.ResourceDao;
+import entity.CampusResource;
+import entity.ReserveRecord;
+import entity.ReserveStatus;
+import entity.ResourceStatus;
+import exception.PermissionDeniedException;
+import result.Result;
+import utils.FileUtil;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-public class ReserveManager {
+public class ReserveRecordService {
+
+    private final ReserveRecordDao reserveRecordDao;
+    private final ResourceDao resourceDao;
+    public ReserveRecordService() {
+        this.reserveRecordDao = new ReserveRecordDao();
+        this.resourceDao = new ResourceDao();
+    }
+
     /**
      * 学生提交预约申请
-     * @param reserveList 全部预约记录
-     * @param resourceList 全部校园资源
      * @param applicantUsername 当前登录学生用户名
      * @param resId 要预约的资源ID
      * @param start 预约开始时间
      * @param end 预约结束时间
      * @param remark 预约备注
-     * @return Result<ReserveRecord>
+     * @return result.Result<entity.ReserveRecord>
      */
-    public Result<ReserveRecord> submitApply(List<ReserveRecord> reserveList,
-                                             List<CampusResource> resourceList,
-                                             String applicantUsername,
+    public Result<ReserveRecord> submitApply(String applicantUsername,
                                              String resId,
                                              LocalDateTime start,
                                              LocalDateTime end,
                                              String remark){
+        List<ReserveRecord> reserveList = reserveRecordDao.findAll();
+        List<CampusResource> resourceList = resourceDao.findAll();
         //1.校验资源是否存在
         Optional<CampusResource> optRes = resourceList.stream()
                 .filter(r -> r.getId().equals(resId))
@@ -46,7 +64,7 @@ public class ReserveManager {
         List<ReserveRecord> passReserveList = reserveList.stream()
                 .filter(r -> resId.equals(r.getResourceId()))
                 .filter(r -> ReserveStatus.PASS.equals(r.getStatus()))
-                .collect(Collectors.toList());
+                .toList();
 
         for(ReserveRecord passRec : passReserveList){
             //时间段重叠判断：!(结束早于对方开始 || 开始晚于对方结束) → 代表冲突
@@ -68,14 +86,15 @@ public class ReserveManager {
         record.setRemark(remark);
 
         reserveList.add(record);
-        FileUtil.saveReserveRecords(reserveList);
+        reserveRecordDao.saveAll(reserveList);
         return Result.success("预约申请提交成功，等待管理员审核", record);
     }
 
     /**
      * 学生：查询我的全部预约记录
      */
-    public Result<List<ReserveRecord>> queryMyReserve(List<ReserveRecord> reserveList, String loginUsername){
+    public Result<List<ReserveRecord>> queryMyReserve(String loginUsername){
+        List<ReserveRecord> reserveList = reserveRecordDao.findAll();
         List<ReserveRecord> myList = reserveList.stream()
                 .filter(r -> loginUsername.equals(r.getApplicantUsername()))
                 .collect(Collectors.toList());
@@ -86,10 +105,10 @@ public class ReserveManager {
      * 学生：取消预约
      * 允许取消：PENDING待审核、PASS已通过；REJECT、CANCEL不可取消；只能取消自己的预约
      */
-    public Result<Void> cancelReserve(List<ReserveRecord> reserveList,
-                                      List<CampusResource> resourceList,
-                                      String loginUsername,
+    public Result<Void> cancelReserve(String loginUsername,
                                       String recordId){
+        List<ReserveRecord> reserveList = reserveRecordDao.findAll();
+        List<CampusResource> resourceList = resourceDao.findAll();
         Optional<ReserveRecord> optRec = reserveList.stream()
                 .filter(r -> recordId.equals(r.getRecordId()))
                 .findFirst();
@@ -126,45 +145,43 @@ public class ReserveManager {
     /**
      * 管理员查询全部预约记录
      */
-    public Result<List<ReserveRecord>> queryAllReserve(List<ReserveRecord> reserveList, String loginRole){
-        if(!"admin".equals(loginRole)){
+    public Result<List<ReserveRecord>> queryAllReserve(String loginRole) {
+        if (!"admin".equals(loginRole)) {
             throw new PermissionDeniedException("权限不足，只有管理员可以查看全部预约");
         }
-        return Result.success("查询全部预约记录成功",reserveList);
+        return Result.success("查询全部预约记录成功", reserveRecordDao.findAll());
     }
 
     /**
      * 管理员审核通过预约
      * 仅PENDING待审核可以通过；审核通过资源置OCCUPIED占用
      */
-    public Result<Void> auditPass(List<ReserveRecord> reserveList,
-                                  List<CampusResource> resourceList,
-                                  String loginRole,
-                                  String recordId){
-        if(!"admin".equals(loginRole)){
+    public Result<Void> auditPass(String loginRole, String recordId) {
+        if (!"admin".equals(loginRole)) {
             throw new PermissionDeniedException("权限不足，只有管理员可以执行审核");
         }
+        List<ReserveRecord> reserveList = reserveRecordDao.findAll();
+        List<CampusResource> resourceList = resourceDao.findAll();
+
         Optional<ReserveRecord> optRec = reserveList.stream()
                 .filter(r -> recordId.equals(r.getRecordId()))
                 .findFirst();
-        if(optRec.isEmpty()){
+        if (optRec.isEmpty()) {
             return Result.fail("预约记录不存在");
         }
         ReserveRecord rec = optRec.get();
-        if(!ReserveStatus.PENDING.equals(rec.getStatus())){
+        if (!ReserveStatus.PENDING.equals(rec.getStatus())) {
             return Result.fail("仅待审核(PENDING)状态预约可以审核通过");
         }
-        //修改预约状态为PASS已通过
         rec.setStatus(ReserveStatus.PASS);
-        //联动：资源修改为OCCUPIED占用
         Optional<CampusResource> optRes = resourceList.stream()
                 .filter(r -> r.getId().equals(rec.getResourceId()))
                 .findFirst();
-        if(optRes.isPresent()){
-            optRes.get().setStatus(ResourceStatus.OCCUPIED);
-            FileUtil.saveResources(resourceList);
+        if (optRes.isPresent()) {
+            optRes.get().setStatus(entity.ResourceStatus.OCCUPIED);
+            resourceDao.saveAll(resourceList);
         }
-        FileUtil.saveReserveRecords(reserveList);
+        reserveRecordDao.saveAll(reserveList);
         return Result.success("审核通过成功，资源已设置为占用");
     }
 
@@ -172,22 +189,24 @@ public class ReserveManager {
      * 管理员审核驳回预约
      * 仅PENDING待审核可以驳回；资源状态不变
      */
-    public Result<Void> auditReject(List<ReserveRecord> reserveList, String loginRole, String recordId){
-        if(!"admin".equals(loginRole)){
+    public Result<Void> auditReject(String loginRole, String recordId) {
+        if (!"admin".equals(loginRole)) {
             throw new PermissionDeniedException("权限不足，只有管理员可以执行审核");
         }
+        List<ReserveRecord> reserveList = reserveRecordDao.findAll();
+
         Optional<ReserveRecord> optRec = reserveList.stream()
                 .filter(r -> recordId.equals(r.getRecordId()))
                 .findFirst();
-        if(optRec.isEmpty()){
+        if (optRec.isEmpty()) {
             return Result.fail("预约记录不存在");
         }
         ReserveRecord rec = optRec.get();
-        if(!ReserveStatus.PENDING.equals(rec.getStatus())){
+        if (!ReserveStatus.PENDING.equals(rec.getStatus())) {
             return Result.fail("仅待审核(PENDING)状态预约可以驳回");
         }
         rec.setStatus(ReserveStatus.REJECT);
-        FileUtil.saveReserveRecords(reserveList);
+        reserveRecordDao.saveAll(reserveList);
         return Result.success("预约已驳回");
     }
 }

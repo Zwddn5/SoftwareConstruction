@@ -1,3 +1,5 @@
+package result;
+
 public class Result<T> {
     private boolean success;
     private String msg;
@@ -61,7 +63,7 @@ public class Result<T> {
 
     @Override
     public String toString() {
-        return "Result{" +
+        return "result.Result{" +
                 "success=" + success +
                 ", msg='" + msg + '\'' +
                 ", data=" + data +

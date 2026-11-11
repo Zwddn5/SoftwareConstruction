@@ -1,3 +1,5 @@
+package entity;
+
 public enum ReserveStatus {
     PENDING,    //待审核，刚提交申请
     PASS,      //已通过，审核成功
