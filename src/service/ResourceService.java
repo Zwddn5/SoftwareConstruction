@@ -37,9 +37,9 @@ public class ResourceService {
         resource.setLocation(location);
         resource.setDescription(desc);
 
-        List<CampusResource> resList = resourceDao.findAll();
-        resList.add(resource);
-        resourceDao.saveAll(resList);
+        List<CampusResource> resourceList = resourceDao.findAll();
+        resourceList.add(resource);
+        resourceDao.saveAll(resourceList);
         return Result.success("新增资源成功");
     }
     /**
@@ -107,11 +107,8 @@ public class ResourceService {
         Optional<CampusResource> opt = resourceDao.findAll().stream()
                 .filter(r -> r.getId().equals(id))
                 .findFirst();
-        if (opt.isPresent()) {
-            return Result.success("查询资源成功", opt.get());
-        } else {
-            return Result.fail("资源ID【" + id + "】不存在");
-        }
+        return opt.map(campusResource -> Result.success("查询资源成功", campusResource))
+                .orElseGet(() -> Result.fail("资源ID【" + id + "】不存在"));
     }
 
     /**

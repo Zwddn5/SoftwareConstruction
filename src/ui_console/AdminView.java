@@ -1,5 +1,7 @@
 package ui_console;
 
+import entity.CampusResource;
+import entity.ReserveRecord;
 import entity.User;
 import exception.BusinessException;
 import result.Result;
@@ -54,12 +56,12 @@ public class AdminView {
                         String location = scanner.nextLine();
                         System.out.print("请输入描述：");
                         String desc = scanner.nextLine();
-                        Result<Void> res = resourceService.addResource("admin", name, type, location, desc);
+                        Result<Void> res = resourceService.addResource(loginAdmin.getRole(), name, type, location, desc);
                         System.out.println(res.getMsg());
                         break;
                     }
                     case 2:{
-                        Result<List<entity.CampusResource>> res = resourceService.queryAllResource("admin");
+                        Result<List<entity.CampusResource>> res = resourceService.queryAllResource(loginAdmin.getRole());
                         if(res.isSuccess()){
                             List<entity.CampusResource> list = res.getData();
                             if(list.isEmpty()){
@@ -70,6 +72,92 @@ public class AdminView {
                         }else{
                             System.out.println(res.getMsg());
                         }
+                        break;
+                    }
+                    //3 修改资源
+                    case 3:{
+                        scanner.nextLine();
+                        System.out.print("请输入要修改的资源ID：");
+                        String editId = scanner.nextLine();
+
+                        System.out.print("新资源名称(留空不修改)：");
+                        String newName = scanner.nextLine();
+                        System.out.print("新资源类型(留空不修改)：");
+                        String newType = scanner.nextLine();
+                        System.out.print("新位置(留空不修改)：");
+                        String newLoc = scanner.nextLine();
+                        System.out.println("状态：1-可预约  2-占用  3-停用；直接回车不修改");
+                        System.out.print("请输入状态选项：");
+                        String statusInput = scanner.nextLine();
+                        Integer statusOpt = null;
+                        if(!statusInput.isBlank()){
+                            statusOpt = Integer.parseInt(statusInput);
+                        }
+                        System.out.print("新描述(留空不修改)：");
+                        String newDesc = scanner.nextLine();
+
+                        Result<Void> updateResult = resourceService.updateResource(
+                                loginAdmin.getRole(),editId,newName,newType,newLoc,statusOpt,newDesc
+                        );
+                        System.out.println(updateResult.getMsg());
+                        break;
+                    }
+                    //4 删除资源
+                    case 4:{
+                        scanner.nextLine();
+                        System.out.print("请输入要删除的资源ID：");
+                        String delId = scanner.nextLine();
+                        Result<Void> delRes = resourceService.deleteResource(loginAdmin.getRole(), delId);
+                        System.out.println(delRes.getMsg());
+                        break;
+                    }
+                    //5 模糊查询资源
+                    case 5:{
+                        scanner.nextLine();
+                        System.out.print("请输入查询关键词：");
+                        String keyword = scanner.nextLine();
+                        Result<List<CampusResource>> queryRes = resourceService.queryResourceByKeyword(keyword);
+                        if(queryRes.isSuccess()){
+                            List<CampusResource> list = queryRes.getData();
+                            if(list.isEmpty()){
+                                System.out.println("没有匹配的资源");
+                            }else{
+                                list.forEach(System.out::println);
+                            }
+                        }
+                        break;
+                    }
+                    //6 查询全部预约记录
+                    case 6:{
+                        Result<List<ReserveRecord>> allReserve = reserveRecordService.queryAllReserve(loginAdmin.getRole());
+                        if(allReserve.isSuccess()){
+                            List<ReserveRecord> list = allReserve.getData();
+                            if(list.isEmpty()){
+                                System.out.println("暂无预约记录");
+                            }else{
+                                list.forEach(System.out::println);
+                            }
+                        }else{
+                            System.out.println(allReserve.getMsg());
+                        }
+                        break;
+                    }
+                    //7 审核通过
+                    case 7:{
+                        scanner.nextLine();
+                        System.out.print("输入待审核预约记录ID：");
+                        String recordId = scanner.nextLine();
+                        Result<Void> passRes = reserveRecordService.auditPass(loginAdmin.getRole(), recordId);
+                        System.out.println(passRes.getMsg());
+                        break;
+                    }
+                    //8 审核驳回
+                    case 8:{
+                        scanner.nextLine();
+                        System.out.print("输入待审核预约记录ID：");
+                        String recordId = scanner.nextLine();
+                        Result<Void> rejectRes = reserveRecordService.auditReject(loginAdmin.getRole(), recordId);
+                        System.out.println(rejectRes.getMsg());
                         break;
                     }
                     case 0:
