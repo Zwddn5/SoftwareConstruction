@@ -3,63 +3,127 @@ package entity;
 import java.time.LocalDateTime;
 
 /**
- * 预约记录类，用于表示用户预约资源的记录
+ * 预约记录类，用于表示用户预约资源的记录.
  */
+
 public class ReserveRecord {
-    private String recordId;
-    private String resourceId;
-    private String applicantUsername;
-    private LocalDateTime applyTime;
-    private LocalDateTime reserveStartTime;
-    private LocalDateTime reserveEndTime;
-    private ReserveStatus status;
-    private String remark;
+  private String recordId;
+  private String resourceId;
+  private String applicantUsername;
+  private LocalDateTime applyTime;
+  private LocalDateTime reserveStartTime;
+  private LocalDateTime reserveEndTime;
+  private ReserveStatus status;
+  private String remark;
 
-    public ReserveRecord(){}
+  /**
+   * 无参构造方法.
+   */
+  public ReserveRecord() {
+  }
 
-    public ReserveRecord(String recordId, String resourceId, String applicantUsername, LocalDateTime applyTime,
-                         LocalDateTime reserveStartTime, LocalDateTime reserveEndTime, ReserveStatus status, String remark) {
-        this.recordId = recordId;
-        this.resourceId = resourceId;
-        this.applicantUsername = applicantUsername;
-        this.applyTime = applyTime;
-        this.reserveStartTime = reserveStartTime;
-        this.reserveEndTime = reserveEndTime;
-        this.status = status;
-        this.remark = remark;
-    }
+  /**
+   * 有参构造方法.
+   *
+   * @param recordId          预约记录ID.
+   * @param resourceId        资源ID.
+   * @param applicantUsername 申请人用户名.
+   * @param applyTime         预约时间.
+   * @param reserveStartTime  预约开始时间.
+   * @param reserveEndTime    预约结束时间.
+   * @param status            预约状态.
+   * @param remark            预约备注.
+   */
+  public ReserveRecord(String recordId, String resourceId, String applicantUsername,
+                       LocalDateTime applyTime, LocalDateTime reserveStartTime,
+                       LocalDateTime reserveEndTime, ReserveStatus status, String remark) {
+    this.recordId = recordId;
+    this.resourceId = resourceId;
+    this.applicantUsername = applicantUsername;
+    this.applyTime = applyTime;
+    this.reserveStartTime = reserveStartTime;
+    this.reserveEndTime = reserveEndTime;
+    this.status = status;
+    this.remark = remark;
+  }
 
-    // getter & setter
-    public String getRecordId() { return recordId; }
-    public void setRecordId(String recordId) { this.recordId = recordId; }
-    public String getResourceId() { return resourceId; }
-    public void setResourceId(String resourceId) { this.resourceId = resourceId; }
-    public String getApplicantUsername() { return applicantUsername; }
-    public void setApplicantUsername(String applicantUsername) { this.applicantUsername = applicantUsername; }
-    public LocalDateTime getApplyTime() { return applyTime; }
-    public void setApplyTime(LocalDateTime applyTime) { this.applyTime = applyTime; }
-    public LocalDateTime getReserveStartTime() { return reserveStartTime; }
-    public void setReserveStartTime(LocalDateTime reserveStartTime) { this.reserveStartTime = reserveStartTime; }
-    public LocalDateTime getReserveEndTime() { return reserveEndTime; }
-    public void setReserveEndTime(LocalDateTime reserveEndTime) { this.reserveEndTime = reserveEndTime; }
-    public ReserveStatus getStatus() { return status; }
-    public void setStatus(ReserveStatus status) { this.status = status; }
-    public String getRemark() { return remark; }
-    public void setRemark(String remark) { this.remark = remark; }
+  // getter & setter
+  public String getRecordId() {
+    return recordId;
+  }
 
-    @Override
-    public String toString() {
-        return "entity.ReserveRecord{" +
-                "recordId='" + recordId + '\'' +
-                ", resourceId='" + resourceId + '\'' +
-                ", applicantUsername='" + applicantUsername + '\'' +
-                ", applyTime=" + applyTime +
-                ", reserveStartTime=" + reserveStartTime +
-                ", reserveEndTime=" + reserveEndTime +
-                ", status=" + status +
-                ", remark='" + remark + '\'' +
-                '}';
-    }
+  public void setRecordId(String recordId) {
+    this.recordId = recordId;
+  }
+
+  public String getResourceId() {
+    return resourceId;
+  }
+
+  public void setResourceId(String resourceId) {
+    this.resourceId = resourceId;
+  }
+
+  public String getApplicantUsername() {
+    return applicantUsername;
+  }
+
+  public void setApplicantUsername(String applicantUsername) {
+    this.applicantUsername = applicantUsername;
+  }
+
+  public LocalDateTime getApplyTime() {
+    return applyTime;
+  }
+
+  public void setApplyTime(LocalDateTime applyTime) {
+    this.applyTime = applyTime;
+  }
+
+  public LocalDateTime getReserveStartTime() {
+    return reserveStartTime;
+  }
+
+  public void setReserveStartTime(LocalDateTime reserveStartTime) {
+    this.reserveStartTime = reserveStartTime;
+  }
+
+  public LocalDateTime getReserveEndTime() {
+    return reserveEndTime;
+  }
+
+  public void setReserveEndTime(LocalDateTime reserveEndTime) {
+    this.reserveEndTime = reserveEndTime;
+  }
+
+  public ReserveStatus getStatus() {
+    return status;
+  }
+
+  public void setStatus(ReserveStatus status) {
+    this.status = status;
+  }
+
+  public String getRemark() {
+    return remark;
+  }
+
+  public void setRemark(String remark) {
+    this.remark = remark;
+  }
+
+  @Override
+  public String toString() {
+    return "ReserveRecord{"
+        + "recordId='" + recordId + '\''
+        + ", resourceId='" + resourceId + '\''
+        + ", applicantUsername='" + applicantUsername + '\''
+        + ", applyTime=" + applyTime + ", reserveStartTime="
+        + reserveStartTime + ", reserveEndTime=" + reserveEndTime
+        + ", status=" + status + ", remark="
+        + remark + '\''
+        + '}';
+  }
 }
 
 

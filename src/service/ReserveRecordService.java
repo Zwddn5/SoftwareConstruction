@@ -7,207 +7,257 @@ import entity.ReserveRecord;
 import entity.ReserveStatus;
 import entity.ResourceStatus;
 import exception.PermissionDeniedException;
-import result.Result;
-import utils.FileUtil;
-
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import result.Result;
+
+/**
+ * 预约记录服务类.
+ */
 
 public class ReserveRecordService {
 
-    private final ReserveRecordDao reserveRecordDao;
-    private final ResourceDao resourceDao;
-    public ReserveRecordService() {
-        this.reserveRecordDao = new ReserveRecordDao();
-        this.resourceDao = new ResourceDao();
+  private final ReserveRecordDao reserveRecordDao;
+  private final ResourceDao resourceDao;
+
+  /**
+   * 构造函数.
+   */
+
+  public ReserveRecordService() {
+    this.reserveRecordDao = new ReserveRecordDao();
+    this.resourceDao = new ResourceDao();
+  }
+
+  /**
+   * 学生提交预约申请.
+   *
+   * @param applicantUsername 当前登录学生用户名.
+   * @param resId             要预约的资源ID.
+   * @param start             预约开始时间.
+   * @param end               预约结束时间.
+   * @param remark            预约备注.
+   * @return 操作结果,包含预约记录.
+   */
+
+  public Result<ReserveRecord> submitApply(String applicantUsername,
+                                           String resId,
+                                           LocalDateTime start,
+                                           LocalDateTime end,
+                                           String remark) {
+    List<CampusResource> resourceList = resourceDao.findAll();
+    // 1.校验资源是否存在
+    Optional<CampusResource> optRes = resourceList.stream()
+        .filter(r -> r.getId().equals(resId))
+        .findFirst();
+    if (optRes.isEmpty()) {
+      return Result.fail("预约资源不存在");
+    }
+    CampusResource resource = optRes.get();
+    // 2.只能预约状态AVAILABLE可预约的资源
+    if (!ResourceStatus.AVAILABLE.equals(resource.getStatus())) {
+      return Result.fail("该资源不可预约（占用/停用）");
+    }
+    // 3.时间基础校验：开始不能晚于结束；预约时间不能早于当前时刻
+    if (start.isAfter(end)) {
+      return Result.fail("预约开始时间不能晚于结束时间");
+    }
+    if (start.isBefore(LocalDateTime.now())) {
+      return Result.fail("预约时间不能早于当前时间");
     }
 
-    /**
-     * 学生提交预约申请
-     * @param applicantUsername 当前登录学生用户名
-     * @param resId 要预约的资源ID
-     * @param start 预约开始时间
-     * @param end 预约结束时间
-     * @param remark 预约备注
-     * @return result.Result<entity.ReserveRecord>
-     */
-    public Result<ReserveRecord> submitApply(String applicantUsername,
-                                             String resId,
-                                             LocalDateTime start,
-                                             LocalDateTime end,
-                                             String remark){
-        List<ReserveRecord> reserveList = reserveRecordDao.findAll();
-        List<CampusResource> resourceList = resourceDao.findAll();
-        //1.校验资源是否存在
-        Optional<CampusResource> optRes = resourceList.stream()
-                .filter(r -> r.getId().equals(resId))
-                .findFirst();
-        if(optRes.isEmpty()){
-            return Result.fail("预约资源不存在");
-        }
-        CampusResource resource = optRes.get();
-        //2.只能预约状态AVAILABLE可预约的资源
-        if(!ResourceStatus.AVAILABLE.equals(resource.getStatus())){
-            return Result.fail("该资源不可预约（占用/停用）");
-        }
-        //3.时间基础校验：开始不能晚于结束；预约时间不能早于当前时刻
-        if(start.isAfter(end)){
-            return Result.fail("预约开始时间不能晚于结束时间");
-        }
-        if(start.isBefore(LocalDateTime.now())){
-            return Result.fail("预约时间不能早于当前时间");
-        }
-        //4.时间冲突校验：该资源已经存在状态为PASS的预约，时间段重叠，禁止提交
-        List<ReserveRecord> passReserveList = reserveList.stream()
-                .filter(r -> resId.equals(r.getResourceId()))
-                .filter(r -> ReserveStatus.PASS.equals(r.getStatus()))
-                .toList();
+    List<ReserveRecord> reserveList = reserveRecordDao.findAll();
 
-        for(ReserveRecord passRec : passReserveList){
-            //时间段重叠判断：!(结束早于对方开始 || 开始晚于对方结束) → 代表冲突
-            boolean conflict = !(end.isBefore(passRec.getReserveStartTime()) || start.isAfter(passRec.getReserveEndTime()));
-            if(conflict){
-                return Result.fail("预约时间段与已通过预约发生冲突，无法提交申请");
-            }
-        }
-        //5.构造预约记录，状态默认PENDING待审核
-        String recordId = "RE" + UUID.randomUUID().toString().substring(0,6).toUpperCase();
-        ReserveRecord record = new ReserveRecord();
-        record.setRecordId(recordId);
-        record.setResourceId(resId);
-        record.setApplicantUsername(applicantUsername);
-        record.setApplyTime(LocalDateTime.now());
-        record.setReserveStartTime(start);
-        record.setReserveEndTime(end);
-        record.setStatus(ReserveStatus.PENDING);
-        record.setRemark(remark);
+    // 4.时间冲突校验：该资源已经存在状态为PASS的预约，时间段重叠，禁止提交
+    List<ReserveRecord> passReserveList = reserveList.stream()
+        .filter(r -> resId.equals(r.getResourceId()))
+        .filter(r -> ReserveStatus.PASS.equals(r.getStatus()))
+        .toList();
 
-        reserveList.add(record);
-        reserveRecordDao.saveAll(reserveList);
-        return Result.success("预约申请提交成功，等待管理员审核", record);
+    for (ReserveRecord passRec : passReserveList) {
+      // 时间段重叠判断：!(结束早于对方开始 || 开始晚于对方结束) → 代表冲突
+      boolean conflict = !(end.isBefore(passRec.getReserveStartTime())
+          || start.isAfter(passRec.getReserveEndTime()));
+      if (conflict) {
+        return Result.fail("预约时间段与已通过预约发生冲突，无法提交申请");
+      }
+    }
+    // 5.构造预约记录，状态默认PENDING待审核
+    String recordId = "RE" + UUID.randomUUID().toString().substring(0, 6).toUpperCase();
+    ReserveRecord record = new ReserveRecord();
+    record.setRecordId(recordId);
+    record.setResourceId(resId);
+    record.setApplicantUsername(applicantUsername);
+    record.setApplyTime(LocalDateTime.now());
+    record.setReserveStartTime(start);
+    record.setReserveEndTime(end);
+    record.setStatus(ReserveStatus.PENDING);
+    record.setRemark(remark);
+
+    reserveList.add(record);
+    reserveRecordDao.saveAll(reserveList);
+    return Result.success("预约申请提交成功，等待管理员审核", record);
+  }
+
+  /**
+   * 学生查询我的预约.
+   *
+   * @param loginUsername 当前登录用户用户名.
+   * @return 操作结果,包含预约记录列表.
+   */
+
+  public Result<List<ReserveRecord>> queryMyReserve(String loginUsername) {
+    List<ReserveRecord> reserveList = reserveRecordDao.findAll();
+    List<ReserveRecord> myList = reserveList.stream()
+        .filter(r -> loginUsername.equals(r.getApplicantUsername()))
+        .collect(Collectors.toList());
+    return Result.success("查询我的预约成功", myList);
+  }
+
+  /*
+   * 学生：取消预约
+   * 允许取消：PENDING待审核、PASS已通过；REJECT、CANCEL不可取消；只能取消自己的预约
+   */
+
+  /**
+   * 学生取消预约.
+   *
+   * @param loginUsername 当前登录用户用户名.
+   * @param recordId      预约记录ID.
+   * @return 操作结果,包含预约记录列表.
+   */
+
+  public Result<Void> cancelReserve(String loginUsername,
+                                    String recordId) {
+    List<ReserveRecord> reserveList = reserveRecordDao.findAll();
+
+    Optional<ReserveRecord> optRec = reserveList.stream()
+        .filter(r -> recordId.equals(r.getRecordId()))
+        .findFirst();
+    if (optRec.isEmpty()) {
+      return Result.fail("预约记录不存在");
+    }
+    ReserveRecord rec = optRec.get();
+    // 权限校验：不能取消别人的预约
+    if (!rec.getApplicantUsername().equals(loginUsername)) {
+      throw new PermissionDeniedException("无权取消他人预约记录");
+    }
+    ReserveStatus status = rec.getStatus();
+    // 只有PENDING、PASS可以取消
+    if (status == ReserveStatus.REJECT || status == ReserveStatus.CANCEL) {
+      return Result.fail("当前预约状态不支持取消");
     }
 
-    /**
-     * 学生：查询我的全部预约记录
-     */
-    public Result<List<ReserveRecord>> queryMyReserve(String loginUsername){
-        List<ReserveRecord> reserveList = reserveRecordDao.findAll();
-        List<ReserveRecord> myList = reserveList.stream()
-                .filter(r -> loginUsername.equals(r.getApplicantUsername()))
-                .collect(Collectors.toList());
-        return Result.success("查询我的预约成功",myList);
+    List<CampusResource> resourceList = resourceDao.findAll();
+
+    // 状态改为CANCEL已取消
+    rec.setStatus(ReserveStatus.CANCEL);
+    // 业务联动：如果原来状态是PASS已通过 → 资源恢复AVAILABLE可预约
+    if (ReserveStatus.PASS.equals(status)) {
+      Optional<CampusResource> optRes = resourceList.stream()
+          .filter(r -> r.getId().equals(rec.getResourceId()))
+          .findFirst();
+      if (optRes.isPresent()) {
+        optRes.get().setStatus(ResourceStatus.AVAILABLE);
+        resourceDao.saveAll(resourceList);
+      }
+    }
+    reserveRecordDao.saveAll(reserveList);
+    return Result.success("预约取消成功");
+  }
+
+  // ==========管理员功能==========
+
+  /**
+   * 管理员查询全部预约记录.
+   *
+   * @param loginRole 当前登录用户角色.
+   * @return 操作结果,包含预约记录列表.
+   */
+
+  public Result<List<ReserveRecord>> queryAllReserve(String loginRole) {
+    if (!"admin".equals(loginRole)) {
+      throw new PermissionDeniedException("权限不足，只有管理员可以查看全部预约");
+    }
+    return Result.success("查询全部预约记录成功", reserveRecordDao.findAll());
+  }
+
+  /**
+   * 管理员审核通过预约.
+   *
+   * @param loginRole 当前登录用户角色.
+   * @param recordId  预约记录ID.
+   * @return 操作结果.
+   */
+  /* 仅PENDING待审核可以通过；审核通过资源置OCCUPIED占用
+   */
+  public Result<Void> auditPass(String loginRole, String recordId) {
+    if (!"admin".equals(loginRole)) {
+      throw new PermissionDeniedException("权限不足，只有管理员可以执行审核");
     }
 
-    /**
-     * 学生：取消预约
-     * 允许取消：PENDING待审核、PASS已通过；REJECT、CANCEL不可取消；只能取消自己的预约
-     */
-    public Result<Void> cancelReserve(String loginUsername,
-                                      String recordId){
-        List<ReserveRecord> reserveList = reserveRecordDao.findAll();
-        List<CampusResource> resourceList = resourceDao.findAll();
-        Optional<ReserveRecord> optRec = reserveList.stream()
-                .filter(r -> recordId.equals(r.getRecordId()))
-                .findFirst();
-        if(optRec.isEmpty()){
-            return Result.fail("预约记录不存在");
-        }
-        ReserveRecord rec = optRec.get();
-        //权限校验：不能取消别人的预约
-        if(!rec.getApplicantUsername().equals(loginUsername)){
-            throw new PermissionDeniedException("无权取消他人预约记录");
-        }
-        ReserveStatus status = rec.getStatus();
-        //只有PENDING、PASS可以取消
-        if(status == ReserveStatus.REJECT || status == ReserveStatus.CANCEL){
-            return Result.fail("当前预约状态不支持取消");
-        }
-        //状态改为CANCEL已取消
-        rec.setStatus(ReserveStatus.CANCEL);
-        //业务联动：如果原来状态是PASS已通过 → 资源恢复AVAILABLE可预约
-        if(ReserveStatus.PASS.equals(status)){
-            Optional<CampusResource> optRes = resourceList.stream()
-                    .filter(r -> r.getId().equals(rec.getResourceId()))
-                    .findFirst();
-            if(optRes.isPresent()){
-                optRes.get().setStatus(ResourceStatus.AVAILABLE);
-                FileUtil.saveResources(resourceList);
-            }
-        }
-        FileUtil.saveReserveRecords(reserveList);
-        return Result.success("预约取消成功");
+    List<ReserveRecord> reserveList = reserveRecordDao.findAll();
+
+    Optional<ReserveRecord> optRec = reserveList.stream()
+        .filter(r -> recordId.equals(r.getRecordId()))
+        .findFirst();
+    if (optRec.isEmpty()) {
+      return Result.fail("预约记录不存在");
+    }
+    ReserveRecord rec = optRec.get();
+    if (!ReserveStatus.PENDING.equals(rec.getStatus())) {
+      return Result.fail("仅待审核(PENDING)状态预约可以审核通过");
     }
 
-    // ==========管理员功能==========
-    /**
-     * 管理员查询全部预约记录
-     */
-    public Result<List<ReserveRecord>> queryAllReserve(String loginRole) {
-        if (!"admin".equals(loginRole)) {
-            throw new PermissionDeniedException("权限不足，只有管理员可以查看全部预约");
-        }
-        return Result.success("查询全部预约记录成功", reserveRecordDao.findAll());
+    List<CampusResource> resourceList = resourceDao.findAll();
+
+    rec.setStatus(ReserveStatus.PASS);
+    Optional<CampusResource> optRes = resourceList.stream()
+        .filter(r -> r.getId().equals(rec.getResourceId()))
+        .findFirst();
+    if (optRes.isPresent()) {
+      optRes.get().setStatus(entity.ResourceStatus.OCCUPIED);
+      resourceDao.saveAll(resourceList);
     }
+    reserveRecordDao.saveAll(reserveList);
+    return Result.success("审核通过成功，资源已设置为占用");
+  }
 
-    /**
-     * 管理员审核通过预约
-     * 仅PENDING待审核可以通过；审核通过资源置OCCUPIED占用
-     */
-    public Result<Void> auditPass(String loginRole, String recordId) {
-        if (!"admin".equals(loginRole)) {
-            throw new PermissionDeniedException("权限不足，只有管理员可以执行审核");
-        }
-        List<ReserveRecord> reserveList = reserveRecordDao.findAll();
-        List<CampusResource> resourceList = resourceDao.findAll();
+  /*
+   * 管理员审核驳回预约
+   * 仅PENDING待审核可以驳回；资源状态不变
+   */
 
-        Optional<ReserveRecord> optRec = reserveList.stream()
-                .filter(r -> recordId.equals(r.getRecordId()))
-                .findFirst();
-        if (optRec.isEmpty()) {
-            return Result.fail("预约记录不存在");
-        }
-        ReserveRecord rec = optRec.get();
-        if (!ReserveStatus.PENDING.equals(rec.getStatus())) {
-            return Result.fail("仅待审核(PENDING)状态预约可以审核通过");
-        }
-        rec.setStatus(ReserveStatus.PASS);
-        Optional<CampusResource> optRes = resourceList.stream()
-                .filter(r -> r.getId().equals(rec.getResourceId()))
-                .findFirst();
-        if (optRes.isPresent()) {
-            optRes.get().setStatus(entity.ResourceStatus.OCCUPIED);
-            resourceDao.saveAll(resourceList);
-        }
-        reserveRecordDao.saveAll(reserveList);
-        return Result.success("审核通过成功，资源已设置为占用");
+  /**
+   * 管理员审核驳回预约.
+   *
+   * @param loginRole 当前登录用户角色.
+   * @param recordId  预约记录ID.
+   * @return 操作结果.
+   */
+
+  public Result<Void> auditReject(String loginRole, String recordId) {
+    if (!"admin".equals(loginRole)) {
+      throw new PermissionDeniedException("权限不足，只有管理员可以执行审核");
     }
+    List<ReserveRecord> reserveList = reserveRecordDao.findAll();
 
-    /**
-     * 管理员审核驳回预约
-     * 仅PENDING待审核可以驳回；资源状态不变
-     */
-    public Result<Void> auditReject(String loginRole, String recordId) {
-        if (!"admin".equals(loginRole)) {
-            throw new PermissionDeniedException("权限不足，只有管理员可以执行审核");
-        }
-        List<ReserveRecord> reserveList = reserveRecordDao.findAll();
-
-        Optional<ReserveRecord> optRec = reserveList.stream()
-                .filter(r -> recordId.equals(r.getRecordId()))
-                .findFirst();
-        if (optRec.isEmpty()) {
-            return Result.fail("预约记录不存在");
-        }
-        ReserveRecord rec = optRec.get();
-        if (!ReserveStatus.PENDING.equals(rec.getStatus())) {
-            return Result.fail("仅待审核(PENDING)状态预约可以驳回");
-        }
-        rec.setStatus(ReserveStatus.REJECT);
-        reserveRecordDao.saveAll(reserveList);
-        return Result.success("预约已驳回");
+    Optional<ReserveRecord> optRec = reserveList.stream()
+        .filter(r -> recordId.equals(r.getRecordId()))
+        .findFirst();
+    if (optRec.isEmpty()) {
+      return Result.fail("预约记录不存在");
     }
+    ReserveRecord rec = optRec.get();
+    if (!ReserveStatus.PENDING.equals(rec.getStatus())) {
+      return Result.fail("仅待审核(PENDING)状态预约可以驳回");
+    }
+    rec.setStatus(ReserveStatus.REJECT);
+    reserveRecordDao.saveAll(reserveList);
+    return Result.success("预约已驳回");
+  }
 }
 
